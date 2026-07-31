@@ -1,17 +1,17 @@
 # DataJud SDK
 
-SDK TypeScript para integração com a [API Pública do DataJud](https://datajud-wiki.cnj.jus.br/api-publica/), mantida pelo Conselho Nacional de Justiça (CNJ).
+SDK TypeScript, tipado e independente de frameworks para integração com a [API Pública do DataJud](https://datajud-wiki.cnj.jus.br/api-publica/), mantida pelo Conselho Nacional de Justiça (CNJ).
 
-O pacote oferece uma interface tipada para construir consultas, pesquisar metadados de processos públicos e percorrer grandes conjuntos de resultados.
+Construa consultas processuais, valide números CNJ, resolva endpoints de tribunais e percorra grandes conjuntos de resultados sem lidar diretamente com os detalhes da Query DSL e do envelope Elasticsearch.
 
 > Projeto independente, sem vínculo oficial com o CNJ. A API Pública do DataJud está sujeita a alterações.
 
 ## Visão geral
 
-O repositório reúne dois componentes:
-
-- `@datajud/sdk`: biblioteca TypeScript responsável pela integração, tipagem, validação e controle das consultas;
-- `frontend/`: aplicação React/Vite para explorar localmente os recursos do SDK.
+| Componente | Descrição |
+| --- | --- |
+| `@datajud/sdk` | Biblioteca TypeScript responsável pela integração, tipagem, validação e controle das consultas |
+| `frontend/` | Aplicação React/Vite para explorar localmente os recursos do SDK |
 
 ## Recursos
 
@@ -26,12 +26,22 @@ O repositório reúne dois componentes:
 - Logger e interceptores de resposta opcionais
 - Erros específicos para validação, autenticação, timeout e respostas HTTP
 
+## Conteúdo
+
+- [Requisitos](#requisitos)
+- [Instalação local](#instalação-local)
+- [Início rápido](#início-rápido)
+- [Explorador web](#explorador-web)
+- [Qualidade e compilação](#qualidade-e-compilação)
+- [Documentação](#documentação)
+- [Escopo da API Pública](#escopo-da-api-pública)
+
 ## Requisitos
 
 - Node.js 20 ou superior
 - Chave vigente da API Pública do DataJud
 
-A chave é pública, mas pode ser alterada pelo CNJ. Consulte sempre a [página oficial de acesso](https://datajud-wiki.cnj.jus.br/api-publica/acesso/) e não grave seu valor no código-fonte.
+A chave é pública, mas pode ser alterada pelo CNJ. Consulte sempre a [página oficial de acesso](https://datajud-wiki.cnj.jus.br/api-publica/acesso/) e mantenha seu valor configurável no ambiente da aplicação.
 
 ## Instalação local
 
@@ -64,9 +74,14 @@ const response = await client.search('TJDFT', {
 });
 
 for (const hit of response.hits.hits) {
-  console.log(hit._source.numeroProcesso);
+  const processo = hit._source;
+  console.log(processo.numeroProcesso, processo.classe.nome);
 }
 ```
+
+O primeiro argumento de `search()` é o alias do tribunal publicado pelo CNJ, como `TJSP`, `TRF1`, `TRT15`, `TRE-SP` ou `STJ`.
+
+Para paginação, cache, consultas avançadas e tratamento de erros, consulte o [guia completo do SDK](docs/sdk.md).
 
 ## Explorador web
 
@@ -89,6 +104,26 @@ O servidor local compila a interface, entrega os arquivos estáticos e encaminha
 
 Consulte o [guia do frontend](docs/frontend.md) para configuração, comandos e solução de problemas.
 
+## Qualidade e compilação
+
+Execute todas as verificações do projeto:
+
+```bash
+npm run check
+```
+
+O comando realiza análise estática, executa a suíte automatizada e compila o SDK. As verificações cobrem o cliente HTTP, cache, construção de consultas, validação do número processual e resolução de tribunais.
+
+Comandos individuais:
+
+| Comando | Descrição |
+| --- | --- |
+| `npm run lint` | Executa a análise estática |
+| `npm test` | Executa a suíte automatizada |
+| `npm run build` | Compila o SDK em `dist/` |
+| `npm run format` | Formata os arquivos do projeto |
+| `npm run frontend:build` | Compila o explorador web |
+
 ## Documentação
 
 - [Guia e referência do SDK](docs/sdk.md)
@@ -102,6 +137,7 @@ Consulte o [guia do frontend](docs/frontend.md) para configuração, comandos e 
 .
 ├── src/           Código-fonte do SDK
 ├── frontend/      Aplicação web de demonstração
+├── tests/         Verificações automatizadas do SDK
 ├── docs/          Guias de uso e referência
 ├── RUNBOOK.md     Procedimentos operacionais
 └── README.md      Visão geral e início rápido
@@ -114,6 +150,8 @@ O DataJud disponibiliza metadados de processos públicos. Dados de partes e proc
 ```text
 POST /api_publica_{alias}/_search
 ```
+
+O SDK não cria operações de cadastro, atualização ou detalhamento que não sejam oferecidas pela API oficial.
 
 ## Referências oficiais
 
