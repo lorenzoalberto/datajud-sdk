@@ -5,13 +5,7 @@ SDK TypeScript, tipado e independente de frameworks para integração com a [API
 Construa consultas processuais, valide números CNJ, resolva endpoints de tribunais e percorra grandes conjuntos de resultados sem lidar diretamente com os detalhes da Query DSL e do envelope Elasticsearch.
 
 > Projeto independente, sem vínculo oficial com o CNJ. A API Pública do DataJud está sujeita a alterações.
-
-## Visão geral
-
-| Componente | Descrição |
-| --- | --- |
-| `@datajud/sdk` | Biblioteca TypeScript responsável pela integração, tipagem, validação e controle das consultas |
-| `frontend/` | Aplicação React/Vite para explorar localmente os recursos do SDK |
+> Em desenvolvimento.
 
 ## Recursos
 
