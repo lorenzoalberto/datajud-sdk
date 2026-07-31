@@ -34,6 +34,37 @@ const initialForm: FormState = {
   size: '10',
 };
 
+const onlyDigits = (value: string) => value.replace(/\D/g, '');
+
+const formatProcessNumber = (value?: string) => {
+  if (!value) return 'Não informado';
+  const digits = onlyDigits(value).slice(0, 20);
+  if (digits.length !== 20) return value;
+  return `${digits.slice(0, 7)}-${digits.slice(7, 9)}.${digits.slice(9, 13)}.${digits.slice(13, 14)}.${digits.slice(14, 16)}.${digits.slice(16)}`;
+};
+
+const formatDateInput = (value: string) => {
+  const digits = onlyDigits(value).slice(0, 8);
+  const parts = [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 8)].filter(Boolean);
+  return parts.join('/');
+};
+
+const parseDateInput = (value: string) => {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+  if (!match) return undefined;
+  const [, day, month, year] = match;
+  const date = new Date(`${year}-${month}-${day}T00:00:00Z`);
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.getUTCDate() !== Number(day) ||
+    date.getUTCMonth() + 1 !== Number(month) ||
+    date.getUTCFullYear() !== Number(year)
+  ) {
+    return undefined;
+  }
+  return `${year}-${month}-${day}`;
+};
+
 const parseDataJudDate = (value: string): Date | undefined => {
   const compact = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/.exec(value);
   const normalized = compact
@@ -48,10 +79,40 @@ const formatDate = (value?: string) => {
   const date = parseDataJudDate(value);
   if (!date) return value;
   return new Intl.DateTimeFormat('pt-BR', {
-    dateStyle: 'short',
-    timeStyle: 'short',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
     timeZone: 'America/Sao_Paulo',
   }).format(date);
+};
+
+const formatDateTime = (value?: string) => {
+  if (!value) return 'Não informado';
+  const date = parseDataJudDate(value);
+  if (!date) return value;
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'America/Sao_Paulo',
+  }).format(date);
+};
+
+const namedValue = (value?: { codigo?: number; nome?: string }) =>
+  value?.nome ? `${value.nome}${value.codigo !== undefined ? ` (${value.codigo})` : ''}` : 'Não informado';
+
+const paginationItems = (current: number, total: number): Array<number | 'ellipsis'> => {
+  if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1);
+  const pages = new Set([1, total, current - 1, current, current + 1]);
+  const visible = [...pages].filter((page) => page > 0 && page <= total).sort((a, b) => a - b);
+  const items: Array<number | 'ellipsis'> = [];
+  visible.forEach((page, index) => {
+    if (index > 0 && page - visible[index - 1] > 1) items.push('ellipsis');
+    items.push(page);
+  });
+  return items;
 };
 
 class ResultErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
@@ -93,11 +154,8 @@ function ResultCard({ hit }: { hit: SearchHit<Processo> }) {
       <div className="result-topline">
         <div>
           <span className="eyebrow">{processo.tribunal}</span>
-          <h3>{processo.numeroProcesso}</h3>
+          <h3>{formatProcessNumber(processo.numeroProcesso)}</h3>
         </div>
-        <span className={`privacy privacy-${processo.nivelSigilo}`}>
-          Sigilo {processo.nivelSigilo}
-        </span>
       </div>
       <div className="result-grid">
         <div>
@@ -120,10 +178,108 @@ function ResultCard({ hit }: { hit: SearchHit<Processo> }) {
       <div className="result-footer">
         <span>{processo.movimentos?.length ?? 0} movimentações</span>
         <button className="text-button" type="button" onClick={() => setOpen(!open)}>
-          {open ? 'Ocultar JSON' : 'Ver JSON completo'}
+          {open ? 'Ocultar detalhes' : 'Ver detalhes do processo'}
         </button>
       </div>
-      {open && <pre>{JSON.stringify(hit, null, 2)}</pre>}
+      {open && (
+        <div className="process-details">
+          <section className="detail-section">
+            <h4>Informações do processo</h4>
+            <dl className="detail-grid">
+              <div><dt>Número</dt><dd>{formatProcessNumber(processo.numeroProcesso)}</dd></div>
+              <div><dt>Tribunal</dt><dd>{processo.tribunal || 'Não informado'}</dd></div>
+              <div><dt>Classe</dt><dd>{namedValue(processo.classe)}</dd></div>
+              <div><dt>Órgão julgador</dt><dd>{namedValue(processo.orgaoJulgador)}</dd></div>
+              <div><dt>Grau</dt><dd>{processo.grau || 'Não informado'}</dd></div>
+              <div><dt>Nível de sigilo</dt><dd>{processo.nivelSigilo ?? 'Não informado'}</dd></div>
+              <div><dt>Sistema</dt><dd>{namedValue(processo.sistema)}</dd></div>
+              <div><dt>Formato</dt><dd>{namedValue(processo.formato)}</dd></div>
+              <div><dt>Data de ajuizamento</dt><dd>{formatDate(processo.dataAjuizamento)}</dd></div>
+              <div><dt>Última atualização</dt><dd>{formatDateTime(processo.dataHoraUltimaAtualizacao)}</dd></div>
+            </dl>
+          </section>
+
+          <section className="detail-section">
+            <h4>Assuntos</h4>
+            {processo.assuntos?.length ? (
+              <ul className="tag-list">
+                {processo.assuntos.map((assunto, index) => (
+                  <li key={`${assunto.codigo}-${index}`}>{namedValue(assunto)}</li>
+                ))}
+              </ul>
+            ) : <p className="detail-empty">Nenhum assunto informado.</p>}
+          </section>
+
+          <section className="detail-section">
+            <h4>Movimentações ({processo.movimentos?.length ?? 0})</h4>
+            {processo.movimentos?.length ? (
+              <ol className="movement-list">
+                {processo.movimentos.map((movimento, index) => (
+                  <li key={`${movimento.codigo}-${movimento.dataHora}-${index}`}>
+                    <div className="movement-heading">
+                      <span>Movimentação {index + 1}</span>
+                      <strong>{movimento.nome || 'Sem nome informado'}</strong>
+                    </div>
+                    <dl className="movement-fields">
+                      <div>
+                        <dt>Data e hora</dt>
+                        <dd>{formatDateTime(movimento.dataHora)}</dd>
+                      </div>
+                      <div>
+                        <dt>Código</dt>
+                        <dd>{movimento.codigo}</dd>
+                      </div>
+                    </dl>
+
+                    {movimento.orgaoJulgador && (
+                      <section className="nested-data">
+                        <h5>Órgão julgador</h5>
+                        <dl className="movement-fields">
+                          <div>
+                            <dt>Nome do órgão</dt>
+                            <dd>{movimento.orgaoJulgador.nomeOrgao || 'Não informado'}</dd>
+                          </div>
+                          <div>
+                            <dt>Código do órgão</dt>
+                            <dd>{movimento.orgaoJulgador.codigoOrgao}</dd>
+                          </div>
+                        </dl>
+                      </section>
+                    )}
+
+                    {!!movimento.complementosTabelados?.length && (
+                      <section className="nested-data">
+                        <h5>Complementos tabelados</h5>
+                        <div className="complement-list">
+                          {movimento.complementosTabelados.map((complemento, itemIndex) => (
+                            <article key={`${complemento.codigo}-${itemIndex}`}>
+                              <h6>{complemento.nome || `Complemento ${itemIndex + 1}`}</h6>
+                              <dl className="complement-fields">
+                                <div>
+                                  <dt>Descrição</dt>
+                                  <dd>{complemento.descricao || 'Não informada'}</dd>
+                                </div>
+                                <div>
+                                  <dt>Valor</dt>
+                                  <dd>{complemento.valor}</dd>
+                                </div>
+                                <div>
+                                  <dt>Código</dt>
+                                  <dd>{complemento.codigo}</dd>
+                                </div>
+                              </dl>
+                            </article>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            ) : <p className="detail-empty">Nenhuma movimentação informada.</p>}
+          </section>
+        </div>
+      )}
     </article>
   );
 }
@@ -133,6 +289,7 @@ export function App() {
   const [response, setResponse] = useState<SearchResponse<Processo>>();
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
   const apiKey = import.meta.env.VITE_DATAJUD_API_KEY as string | undefined;
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
@@ -148,8 +305,7 @@ export function App() {
     }
   };
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
+  const search = async (requestedPage: number) => {
     setError(undefined);
     setResponse(undefined);
     if (!apiKey) {
@@ -158,13 +314,23 @@ export function App() {
     }
     try {
       setLoading(true);
+      const inicio = form.inicio ? parseDateInput(form.inicio) : undefined;
+      const fim = form.fim ? parseDateInput(form.fim) : undefined;
+      if ((form.inicio && !inicio) || (form.fim && !fim)) {
+        setError('Informe datas válidas no formato DD/MM/AAAA, sempre com o ano em 4 dígitos.');
+        return;
+      }
+      if ((inicio && !fim) || (!inicio && fim)) {
+        setError('Informe a data inicial e a data final para pesquisar por período.');
+        return;
+      }
       const builder = new QueryBuilder();
       if (form.numero) builder.numeroProcesso(form.numero);
       if (form.classe) builder.classe(Number(form.classe));
       if (form.assunto) builder.assunto(Number(form.assunto));
       if (form.orgao) builder.orgaoJulgador(Number(form.orgao));
       if (form.movimento) builder.movimento(Number(form.movimento));
-      if (form.inicio && form.fim) builder.intervaloDatas(form.inicio, form.fim);
+      if (inicio && fim) builder.intervaloDatas(inicio, fim);
       const hasFilter = Boolean(
         form.numero ||
         form.classe ||
@@ -188,6 +354,7 @@ export function App() {
         body: JSON.stringify({
           query: builder.build(),
           size: Number(form.size),
+          from: (requestedPage - 1) * Number(form.size),
         }),
       });
       const responseText = await httpResponse.text();
@@ -208,6 +375,7 @@ export function App() {
         throw new Error(apiMessage);
       }
       setResponse(payload as SearchResponse<Processo>);
+      setPage(requestedPage);
     } catch (reason) {
       setError(
         reason instanceof TypeError
@@ -220,6 +388,15 @@ export function App() {
       setLoading(false);
     }
   };
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    void search(1);
+  };
+
+  const pageSize = Number(form.size);
+  const accessibleResults = response ? Math.min(response.hits.total.value, 10_000) : 0;
+  const totalPages = Math.ceil(accessibleResults / pageSize);
 
   return (
     <div className="page">
@@ -235,13 +412,20 @@ export function App() {
       </header>
 
       <main>
-        <form className="search-panel" onSubmit={(event) => void submit(event)}>
+        <form className="search-panel" onSubmit={submit}>
           <div className="panel-heading">
             <div>
               <span className="step">01</span>
               <h2>Parâmetros da consulta</h2>
             </div>
-            <button className="clear-button" type="button" onClick={() => setForm(initialForm)}>
+            <button
+              className="clear-button"
+              type="button"
+              onClick={() => {
+                setForm(initialForm);
+                setPage(1);
+              }}
+            >
               Limpar
             </button>
           </div>
@@ -309,14 +493,26 @@ export function App() {
             <label className="field">
               <span>Data inicial</span>
               <input
-                type="date"
+                type="text"
+                inputMode="numeric"
+                maxLength={10}
                 value={form.inicio}
-                onChange={(e) => update('inicio', e.target.value)}
+                onChange={(e) => update('inicio', formatDateInput(e.target.value))}
+                placeholder="DD/MM/AAAA"
+                aria-label="Data inicial no formato dia, mês e ano"
               />
             </label>
             <label className="field">
               <span>Data final</span>
-              <input type="date" value={form.fim} onChange={(e) => update('fim', e.target.value)} />
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={10}
+                value={form.fim}
+                onChange={(e) => update('fim', formatDateInput(e.target.value))}
+                placeholder="DD/MM/AAAA"
+                aria-label="Data final no formato dia, mês e ano"
+              />
             </label>
             <label className="field">
               <span>Resultados</span>
@@ -345,7 +541,7 @@ export function App() {
             </div>
             {response && (
               <span className="count">
-                {response.hits.total.value.toLocaleString('pt-BR')} encontrados · {response.took} ms
+                {response.hits.total.value.toLocaleString('pt-BR')} encontrados
               </span>
             )}
           </div>
@@ -382,6 +578,42 @@ export function App() {
               ))}
             </div>
           </ResultErrorBoundary>
+          {response && response.hits.hits.length > 0 && totalPages > 1 && (
+            <nav className="pagination" aria-label="Paginação dos resultados">
+              <button
+                type="button"
+                disabled={page === 1 || loading}
+                onClick={() => void search(page - 1)}
+              >
+                ← Anterior
+              </button>
+              <div className="pagination-pages">
+                {paginationItems(page, totalPages).map((item, index) =>
+                  item === 'ellipsis' ? (
+                    <span key={`ellipsis-${index}`} aria-hidden="true">…</span>
+                  ) : (
+                    <button
+                      type="button"
+                      key={item}
+                      className={item === page ? 'active' : undefined}
+                      aria-current={item === page ? 'page' : undefined}
+                      disabled={loading}
+                      onClick={() => void search(item)}
+                    >
+                      {item}
+                    </button>
+                  ),
+                )}
+              </div>
+              <button
+                type="button"
+                disabled={page === totalPages || loading}
+                onClick={() => void search(page + 1)}
+              >
+                Próxima →
+              </button>
+            </nav>
+          )}
         </section>
       </main>
       <footer>
