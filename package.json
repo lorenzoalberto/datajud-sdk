@@ -1,5 +1,5 @@
 {
-  "name": "@datajud/sdk",
+  "name": "@lorenzoalberto/datajud-sdk",
   "version": "0.1.0",
   "description": "SDK TypeScript para a API Pública do DataJud/CNJ",
   "type": "module",
@@ -15,7 +15,8 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "check": "npm run lint && npm run test && npm run build"
+    "check": "npm run lint && npm run test && npm run build",
+    "smoke:package": "node scripts/smoke-package.mjs"
   },
   "engines": { "node": ">=20" },
   "devDependencies": {
