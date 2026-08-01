@@ -1,12 +1,16 @@
 import type { Cache } from '../types/cache.js';
+
 export interface Logger {
   debug(message: string, context?: Readonly<Record<string, unknown>>): void;
   warn(message: string, context?: Readonly<Record<string, unknown>>): void;
   error(message: string, context?: Readonly<Record<string, unknown>>): void;
 }
-export interface RateLimitOptions { readonly maxRequests: number; readonly intervalMs: number }
-export interface ResponseContext { readonly response: Response; readonly attempt: number; readonly durationMs: number }
-export type ResponseInterceptor = (context: ResponseContext) => void | Promise<void>;
+
+export interface RateLimitOptions {
+  readonly maxRequests: number;
+  readonly intervalMs: number;
+}
+
 export interface DataJudClientOptions {
   readonly apiKey: string;
   readonly timeout?: number;
@@ -14,8 +18,12 @@ export interface DataJudClientOptions {
   readonly retryDelay?: number;
   readonly baseUrl?: string;
   readonly logger?: Logger;
-  readonly rateLimit?: RateLimitOptions;
+  /**
+   * Limite local de requisições. O padrão respeita o limite público de 120 rpm.
+   * Use `false` somente quando o controle for realizado externamente.
+   */
+  readonly rateLimit?: RateLimitOptions | false;
   readonly cache?: Cache;
-  readonly responseInterceptors?: readonly ResponseInterceptor[];
+  /** Injeção destinada a testes e runtimes sem `fetch` global. */
   readonly fetch?: typeof globalThis.fetch;
 }
