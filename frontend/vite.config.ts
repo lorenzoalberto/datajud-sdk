@@ -108,7 +108,7 @@ export default defineConfig({
   plugins: [react(), dataJudCurlProxy()],
   resolve: {
     alias: {
-      '@datajud/sdk': fileURLToPath(new URL('../src/index.ts', import.meta.url)),
+      '@lorenzoalberto/datajud-sdk': fileURLToPath(new URL('../src/index.ts', import.meta.url)),
     },
   },
   server: {

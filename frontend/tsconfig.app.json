@@ -15,7 +15,7 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "paths": { "@datajud/sdk": ["../src/index.ts"] }
+    "paths": { "@lorenzoalberto/datajud-sdk": ["../src/index.ts"] }
   },
   "include": ["src"]
 }
