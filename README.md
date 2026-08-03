@@ -15,9 +15,9 @@ Construa consultas processuais, valide números CNJ, resolva endpoints de tribun
 - Resolução do tribunal a partir do número processual CNJ
 - Paginação contínua com `search_after`
 - Timeout, cancelamento e novas tentativas com backoff exponencial
-- Limitação local da taxa de requisições
+- Limitação local padrão de 120 requisições por minuto
 - Cache em memória ou implementação personalizada
-- Logger e interceptores de resposta opcionais
+- Interface simples de logger
 - Erros específicos para validação, autenticação, timeout e respostas HTTP
 
 ## Conteúdo
@@ -49,7 +49,7 @@ A compilação é gerada em `dist/`, com módulos ECMAScript e declarações Typ
 ## Início rápido
 
 ```ts
-import { DataJudClient, QueryBuilder } from '@datajud/sdk';
+import { DataJudClient, QueryBuilder } from '@lorenzoalberto/datajud-sdk';
 
 const client = new DataJudClient({
   apiKey: process.env.DATAJUD_API_KEY!,
@@ -108,15 +108,23 @@ npm run check
 
 O comando realiza análise estática, executa a suíte automatizada e compila o SDK. As verificações cobrem o cliente HTTP, cache, construção de consultas, validação do número processual e resolução de tribunais.
 
+Para validar exatamente os arquivos que seriam publicados:
+
+```bash
+npm run smoke:package
+```
+
+Esse comando cria o tarball com `npm pack`, instala-o em um diretório temporário e importa a API pública pelo nome do pacote. A integração contínua executa tanto `check` quanto esse smoke test.
+
 Comandos individuais:
 
-| Comando | Descrição |
-| --- | --- |
-| `npm run lint` | Executa a análise estática |
-| `npm test` | Executa a suíte automatizada |
-| `npm run build` | Compila o SDK em `dist/` |
-| `npm run format` | Formata os arquivos do projeto |
-| `npm run frontend:build` | Compila o explorador web |
+| Comando                  | Descrição                      |
+| ------------------------ | ------------------------------ |
+| `npm run lint`           | Executa a análise estática     |
+| `npm test`               | Executa a suíte automatizada   |
+| `npm run build`          | Compila o SDK em `dist/`       |
+| `npm run format`         | Formata os arquivos do projeto |
+| `npm run frontend:build` | Compila o explorador web       |
 
 ## Documentação
 

@@ -140,8 +140,8 @@ Sintomas:
 Ações:
 
 1. Reduza a concorrência.
-2. Configure `rateLimit` no cliente.
-3. Aumente o intervalo entre as requisições.
+2. Confirme que o limite padrão de 120 rpm não foi desativado ou sobrescrito.
+3. Se necessário, configure um `rateLimit` mais conservador no cliente.
 4. Utilize cache quando várias chamadas repetirem a mesma consulta.
 
 ### Resposta sem cursor de paginação
@@ -189,13 +189,13 @@ Antes de preparar um pacote:
 2. Execute `npm install`.
 3. Execute `npm run lint`.
 4. Execute `npm run build`.
-5. Revise o conteúdo que será empacotado:
+5. Execute o smoke test do pacote:
 
 ```bash
-npm pack --dry-run
+npm run smoke:package
 ```
 
-O pacote deve conter os artefatos de `dist/`, o `README.md` e a licença.
+O comando empacota o projeto, instala o tarball em um diretório temporário e importa suas principais exportações. O pacote deve conter os artefatos de `dist/`, o `README.md` e a licença.
 
 ## Referências
 

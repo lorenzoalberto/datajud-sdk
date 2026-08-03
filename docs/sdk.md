@@ -1,6 +1,6 @@
 # Guia e referência do DataJud SDK
 
-Este documento descreve a API pública atualmente exportada pelo pacote `@datajud/sdk`.
+Este documento descreve a API pública atualmente exportada pelo pacote `@lorenzoalberto/datajud-sdk`.
 
 ## Sumário
 
@@ -19,7 +19,7 @@ Este documento descreve a API pública atualmente exportada pelo pacote `@dataju
 Crie uma instância de `DataJudClient` com a chave vigente:
 
 ```ts
-import { DataJudClient } from '@datajud/sdk';
+import { DataJudClient } from '@lorenzoalberto/datajud-sdk';
 
 const client = new DataJudClient({
   apiKey: process.env.DATAJUD_API_KEY!,
@@ -31,24 +31,15 @@ O valor pode ser informado com ou sem o prefixo `APIKey`. O SDK normaliza o cabe
 ### Configuração completa
 
 ```ts
-import { DataJudClient, MemoryCache } from '@datajud/sdk';
+import { DataJudClient, MemoryCache } from '@lorenzoalberto/datajud-sdk';
 
 const client = new DataJudClient({
   apiKey: process.env.DATAJUD_API_KEY!,
   timeout: 30_000,
   retries: 3,
   retryDelay: 250,
-  rateLimit: {
-    maxRequests: 10,
-    intervalMs: 1_000,
-  },
   cache: new MemoryCache(),
   logger: console,
-  responseInterceptors: [
-    ({ response, attempt, durationMs }) => {
-      console.log(response.status, attempt, durationMs);
-    },
-  ],
 });
 ```
 
@@ -60,19 +51,20 @@ const client = new DataJudClient({
 | `retryDelay` | `number` | `250` | Intervalo-base do backoff, em milissegundos |
 | `baseUrl` | `string` | API oficial | URL-base para resolução dos endpoints |
 | `logger` | `Logger` | — | Recebe eventos de depuração e novas tentativas |
-| `rateLimit` | `RateLimitOptions` | — | Limita requisições por intervalo no cliente |
+| `rateLimit` | `RateLimitOptions \| false` | 120 por minuto | Ajusta o limite local; `false` delega o controle ao consumidor |
 | `cache` | `Cache` | — | Define o armazenamento de respostas |
-| `responseInterceptors` | `ResponseInterceptor[]` | — | Processa o contexto de cada resposta HTTP |
 | `fetch` | `typeof fetch` | `globalThis.fetch` | Permite fornecer outra implementação de `fetch` |
 
-Respostas HTTP `408`, `429`, `500`, `502`, `503` e `504` podem ser repetidas com backoff exponencial e jitter.
+Respostas HTTP `408`, `429`, `500`, `502`, `503` e `504`, timeouts e falhas de transporte podem ser repetidos com backoff exponencial e jitter. O cabeçalho `Retry-After`, quando enviado em segundos, tem precedência sobre o backoff. Erros `400`, `401`, `403` e `404` não são repetidos.
+
+O limite local de 120 requisições por janela de 60 segundos vem habilitado por padrão. Ele vale por instância de `DataJudClient`; aplicações com várias instâncias ou processos devem coordenar o limite externamente. Nesse caso, use `rateLimit: false`.
 
 ## Construção de consultas
 
 `QueryBuilder` fornece métodos para os filtros processuais mais comuns:
 
 ```ts
-import { QueryBuilder } from '@datajud/sdk';
+import { QueryBuilder } from '@lorenzoalberto/datajud-sdk';
 
 const query = new QueryBuilder()
   .numeroProcesso('0000832-35.2018.4.01.3202')
@@ -232,12 +224,14 @@ for await (const processo of client.iterate('TJDFT', {
 
 Na ausência de uma ordenação explícita, o iterador utiliza `@timestamp` e `id` em ordem crescente. A resposta precisa incluir os valores de `sort` para que o cursor avance.
 
+O iterador interrompe a operação se a resposta não trouxer o cursor ou se o mesmo cursor for devolvido em páginas consecutivas, evitando um laço infinito.
+
 ## Consulta por número CNJ
 
 `ProcessosService` analisa o número, resolve o alias do tribunal e executa a consulta:
 
 ```ts
-import { DataJudClient, ProcessosService } from '@datajud/sdk';
+import { DataJudClient, ProcessosService } from '@lorenzoalberto/datajud-sdk';
 
 const client = new DataJudClient({
   apiKey: process.env.DATAJUD_API_KEY!,
@@ -258,7 +252,7 @@ Caso o segmento e o código não correspondam a um endpoint público conhecido, 
 import {
   isValidNumeroProcesso,
   parseNumeroProcesso,
-} from '@datajud/sdk';
+} from '@lorenzoalberto/datajud-sdk';
 
 const valido = isValidNumeroProcesso(
   '0000832-35.2018.4.01.3202',
@@ -291,7 +285,7 @@ import {
   DataJudClient,
   MemoryCache,
   QueryBuilder,
-} from '@datajud/sdk';
+} from '@lorenzoalberto/datajud-sdk';
 
 const client = new DataJudClient({
   apiKey: process.env.DATAJUD_API_KEY!,
@@ -325,7 +319,7 @@ import {
   DataJudError,
   RateLimitError,
   ValidationError,
-} from '@datajud/sdk';
+} from '@lorenzoalberto/datajud-sdk';
 
 try {
   await client.search('TJSP');
@@ -364,7 +358,7 @@ import {
   isTribunalAlias,
   normalizeAlias,
   resolveAlias,
-} from '@datajud/sdk';
+} from '@lorenzoalberto/datajud-sdk';
 
 isTribunalAlias('TJSP');
 normalizeAlias('api_publica_tjsp');
