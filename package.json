@@ -1,6 +1,6 @@
 {
   "name": "@lorenzoalberto-dev/datajud-sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "SDK TypeScript para a API Pública do DataJud/CNJ",
   "author": "Lorenzo Alberto",
   "license": "MIT",
@@ -25,8 +25,17 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
-  "files": ["dist", "README.md", "LICENSE"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "frontend:dev": "npm --prefix frontend run dev",
@@ -39,7 +48,9 @@
     "smoke:package": "node scripts/smoke-package.mjs",
     "prepack": "npm run build"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
     "@types/node": "^22.10.2",
