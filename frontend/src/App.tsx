@@ -3,7 +3,6 @@ import {
   QueryBuilder,
   TRIBUNAL_ALIASES,
   parseNumeroProcesso,
-  resolveAlias,
   type Processo,
   type SearchHit,
   type SearchResponse,
@@ -101,7 +100,9 @@ const formatDateTime = (value?: string) => {
 };
 
 const namedValue = (value?: { codigo?: number; nome?: string }) =>
-  value?.nome ? `${value.nome}${value.codigo !== undefined ? ` (${value.codigo})` : ''}` : 'Não informado';
+  value?.nome
+    ? `${value.nome}${value.codigo !== undefined ? ` (${value.codigo})` : ''}`
+    : 'Não informado';
 
 const paginationItems = (current: number, total: number): Array<number | 'ellipsis'> => {
   if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1);
@@ -186,16 +187,46 @@ function ResultCard({ hit }: { hit: SearchHit<Processo> }) {
           <section className="detail-section">
             <h4>Informações do processo</h4>
             <dl className="detail-grid">
-              <div><dt>Número</dt><dd>{formatProcessNumber(processo.numeroProcesso)}</dd></div>
-              <div><dt>Tribunal</dt><dd>{processo.tribunal || 'Não informado'}</dd></div>
-              <div><dt>Classe</dt><dd>{namedValue(processo.classe)}</dd></div>
-              <div><dt>Órgão julgador</dt><dd>{namedValue(processo.orgaoJulgador)}</dd></div>
-              <div><dt>Grau</dt><dd>{processo.grau || 'Não informado'}</dd></div>
-              <div><dt>Nível de sigilo</dt><dd>{processo.nivelSigilo ?? 'Não informado'}</dd></div>
-              <div><dt>Sistema</dt><dd>{namedValue(processo.sistema)}</dd></div>
-              <div><dt>Formato</dt><dd>{namedValue(processo.formato)}</dd></div>
-              <div><dt>Data de ajuizamento</dt><dd>{formatDate(processo.dataAjuizamento)}</dd></div>
-              <div><dt>Última atualização</dt><dd>{formatDateTime(processo.dataHoraUltimaAtualizacao)}</dd></div>
+              <div>
+                <dt>Número</dt>
+                <dd>{formatProcessNumber(processo.numeroProcesso)}</dd>
+              </div>
+              <div>
+                <dt>Tribunal</dt>
+                <dd>{processo.tribunal || 'Não informado'}</dd>
+              </div>
+              <div>
+                <dt>Classe</dt>
+                <dd>{namedValue(processo.classe)}</dd>
+              </div>
+              <div>
+                <dt>Órgão julgador</dt>
+                <dd>{namedValue(processo.orgaoJulgador)}</dd>
+              </div>
+              <div>
+                <dt>Grau</dt>
+                <dd>{processo.grau || 'Não informado'}</dd>
+              </div>
+              <div>
+                <dt>Nível de sigilo</dt>
+                <dd>{processo.nivelSigilo ?? 'Não informado'}</dd>
+              </div>
+              <div>
+                <dt>Sistema</dt>
+                <dd>{namedValue(processo.sistema)}</dd>
+              </div>
+              <div>
+                <dt>Formato</dt>
+                <dd>{namedValue(processo.formato)}</dd>
+              </div>
+              <div>
+                <dt>Data de ajuizamento</dt>
+                <dd>{formatDate(processo.dataAjuizamento)}</dd>
+              </div>
+              <div>
+                <dt>Última atualização</dt>
+                <dd>{formatDateTime(processo.dataHoraUltimaAtualizacao)}</dd>
+              </div>
             </dl>
           </section>
 
@@ -207,7 +238,9 @@ function ResultCard({ hit }: { hit: SearchHit<Processo> }) {
                   <li key={`${assunto.codigo}-${index}`}>{namedValue(assunto)}</li>
                 ))}
               </ul>
-            ) : <p className="detail-empty">Nenhum assunto informado.</p>}
+            ) : (
+              <p className="detail-empty">Nenhum assunto informado.</p>
+            )}
           </section>
 
           <section className="detail-section">
@@ -276,7 +309,9 @@ function ResultCard({ hit }: { hit: SearchHit<Processo> }) {
                   </li>
                 ))}
               </ol>
-            ) : <p className="detail-empty">Nenhuma movimentação informada.</p>}
+            ) : (
+              <p className="detail-empty">Nenhuma movimentação informada.</p>
+            )}
           </section>
         </div>
       )}
@@ -290,7 +325,6 @@ export function App() {
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const apiKey = import.meta.env.VITE_DATAJUD_API_KEY as string | undefined;
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -308,10 +342,6 @@ export function App() {
   const search = async (requestedPage: number) => {
     setError(undefined);
     setResponse(undefined);
-    if (!apiKey) {
-      setError('Configure VITE_DATAJUD_API_KEY no arquivo frontend/.env.');
-      return;
-    }
     try {
       setLoading(true);
       const inicio = form.inicio ? parseDateInput(form.inicio) : undefined;
@@ -345,18 +375,20 @@ export function App() {
         );
         return;
       }
-      const httpResponse = await fetch(resolveAlias(form.tribunal, '/api'), {
-        method: 'POST',
-        headers: {
-          Authorization: `APIKey ${apiKey}`,
-          'Content-Type': 'application/json',
+      const httpResponse = await fetch(
+        `/api/search?tribunal=${encodeURIComponent(form.tribunal)}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            query: builder.build(),
+            size: Number(form.size),
+            from: (requestedPage - 1) * Number(form.size),
+          }),
         },
-        body: JSON.stringify({
-          query: builder.build(),
-          size: Number(form.size),
-          from: (requestedPage - 1) * Number(form.size),
-        }),
-      });
+      );
       const responseText = await httpResponse.text();
       let payload: unknown;
       try {
@@ -379,7 +411,7 @@ export function App() {
     } catch (reason) {
       setError(
         reason instanceof TypeError
-          ? 'O servidor local foi desconectado. Confirme se o terminal com “npm start” continua aberto.'
+          ? 'Não foi possível conectar ao serviço de consulta. Tente novamente em instantes.'
           : reason instanceof Error
             ? reason.message
             : 'Não foi possível consultar o DataJud.',
@@ -590,7 +622,9 @@ export function App() {
               <div className="pagination-pages">
                 {paginationItems(page, totalPages).map((item, index) =>
                   item === 'ellipsis' ? (
-                    <span key={`ellipsis-${index}`} aria-hidden="true">…</span>
+                    <span key={`ellipsis-${index}`} aria-hidden="true">
+                      …
+                    </span>
                   ) : (
                     <button
                       type="button"

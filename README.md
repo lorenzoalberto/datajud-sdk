@@ -177,6 +177,8 @@ npm install
 npm start
 ```
 
+Para publicá-lo na Vercel, use `frontend` como Root Directory e configure `DATAJUD_API_KEY` nas variáveis de ambiente do projeto. Consulte o [guia do explorador](docs/frontend.md#deploy-na-vercel).
+
 ## Escopo
 
 O SDK utiliza exclusivamente o endpoint público de pesquisa:

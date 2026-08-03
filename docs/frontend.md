@@ -1,6 +1,6 @@
 # Guia do explorador web
 
-O explorador web é uma aplicação React/Vite incluída em `frontend/` para demonstrar o uso do DataJud SDK em uma interface local.
+O explorador web é uma aplicação React/Vite incluída em `frontend/` para demonstrar o uso do DataJud SDK localmente ou em um deploy na Vercel.
 
 ## Funcionalidades
 
@@ -17,7 +17,6 @@ O explorador web é uma aplicação React/Vite incluída em `frontend/` para dem
 
 - Node.js 20 ou superior;
 - npm;
-- `curl` disponível no sistema;
 - chave vigente da API Pública do DataJud.
 
 ## Configuração
@@ -29,9 +28,9 @@ cd frontend
 cp .env.example .env
 ```
 
-Confira o valor de `VITE_DATAJUD_API_KEY` em `.env` e, se necessário, atualize-o com a chave publicada na [página oficial de acesso](https://datajud-wiki.cnj.jus.br/api-publica/acesso/).
+Confira o valor de `DATAJUD_API_KEY` em `.env` e, se necessário, atualize-o com a chave publicada na [página oficial de acesso](https://datajud-wiki.cnj.jus.br/api-publica/acesso/).
 
-O arquivo `.env` é local e não deve ser versionado.
+O arquivo `.env` é local e não deve ser versionado. A variável não usa o prefixo `VITE_`: ela pertence ao servidor e não deve ser incorporada ao JavaScript enviado ao navegador.
 
 ## Inicialização
 
@@ -57,11 +56,11 @@ Mantenha o processo em execução enquanto utilizar a interface.
 
 ## Comandos
 
-| Comando | Descrição |
-| --- | --- |
-| `npm start` | Compila a aplicação e inicia o servidor local na porta 5190 |
-| `npm run dev` | Inicia o servidor visual de desenvolvimento Vite na porta 5180 |
-| `npm run build` | Gera os arquivos estáticos em `frontend/dist/` |
+| Comando           | Descrição                                                         |
+| ----------------- | ----------------------------------------------------------------- |
+| `npm start`       | Compila a aplicação e inicia o servidor local na porta 5190       |
+| `npm run dev`     | Inicia apenas o servidor visual Vite na porta 5180                |
+| `npm run build`   | Gera os arquivos estáticos em `frontend/dist/`                    |
 | `npm run preview` | Visualiza uma compilação existente sem o encaminhamento integrado |
 
 Na raiz do repositório, também estão disponíveis:
@@ -75,13 +74,21 @@ Use `npm start` para realizar consultas pela interface completa. Os comandos `de
 
 ## Funcionamento
 
-A aplicação importa o SDK diretamente de `src/index.ts` durante o desenvolvimento. As consultas são construídas com `QueryBuilder` e enviadas ao endpoint correspondente ao alias selecionado.
+A aplicação consome `@lorenzoalberto-dev/datajud-sdk`. As consultas são construídas com `QueryBuilder` e enviadas para a rota de mesma origem `/api/search`.
 
-O navegador não acessa diretamente o domínio do CNJ. O servidor local:
+O navegador não recebe a chave e não acessa diretamente o domínio do CNJ. No deploy, uma Vercel Function:
 
 1. recebe a requisição em uma rota interna;
-2. valida o método e o formato do endpoint;
-3. encaminha a requisição ao DataJud usando `curl`;
+2. valida o método, o tribunal e os limites da consulta;
+3. adiciona a chave armazenada no ambiente do servidor;
+4. consulta o DataJud por meio do SDK;
+5. devolve a resposta JSON ao navegador.
+
+O servidor usado por `npm start` oferece o mesmo contrato local:
+
+1. recebe a requisição em `/api/search`;
+2. valida o tribunal e lê `DATAJUD_API_KEY` do ambiente;
+3. encaminha a consulta ao DataJud;
 4. devolve a resposta JSON ao navegador.
 
 Esse fluxo mantém a aplicação em mesma origem e evita dependência da política CORS do endpoint público.
@@ -99,15 +106,29 @@ Consultas abertas, sem filtros, são rejeitadas pela interface para reduzir resp
 
 ## Diagnóstico
 
+## Deploy na Vercel
+
+1. Importe o repositório `lorenzoalberto/datajud-sdk` na Vercel.
+2. Em **Root Directory**, selecione `frontend`.
+3. Mantenha o framework **Vite**. O arquivo `vercel.json` já define o build e o diretório de saída.
+4. Em **Environment Variables**, crie `DATAJUD_API_KEY` para os ambientes Production e Preview.
+5. Faça o deploy.
+
+Não crie `VITE_DATAJUD_API_KEY`: variáveis com `VITE_` são expostas no bundle do navegador.
+
+Após o deploy, teste uma consulta e confira os logs da Function `api/search`. A Function limita cada página a 100 resultados, rejeita pesquisas sem filtros e usa timeout, retry, erros e limitação local do SDK.
+
+## Diagnóstico
+
 ### Chave não configurada
 
 Mensagem esperada:
 
 ```text
-Configure VITE_DATAJUD_API_KEY no arquivo frontend/.env.
+DATAJUD_API_KEY não configurada no servidor.
 ```
 
-Confirme a existência do arquivo e reinicie o servidor após alterar a variável.
+Localmente, confirme a existência de `frontend/.env` e reinicie o servidor. Na Vercel, confira a variável do ambiente correspondente e faça um novo deploy.
 
 ### Servidor local desconectado
 
@@ -127,15 +148,9 @@ Confirme:
 - o intervalo de datas;
 - a disponibilidade do endpoint oficial.
 
-### Falha do `curl`
+### Falha de conectividade
 
-Verifique se o executável está disponível:
-
-```bash
-curl --version
-```
-
-Depois, confirme que o ambiente possui acesso HTTPS a:
+Confirme nos logs que o ambiente possui acesso HTTPS a:
 
 ```text
 https://api-publica.datajud.cnj.jus.br
@@ -144,9 +159,10 @@ https://api-publica.datajud.cnj.jus.br
 ## Segurança
 
 - Não versione `frontend/.env`.
-- Não exponha a chave em logs, capturas de tela ou relatórios.
+- Mantenha `DATAJUD_API_KEY` somente no ambiente do servidor.
+- Nunca use o prefixo `VITE_` para a chave.
 - Utilize somente aliases validados pelo SDK.
-- Execute o servidor no endereço local configurado pelo projeto.
+- Limites em memória são aplicados por instância serverless; configure regras adicionais na Vercel se a demonstração receber tráfego não confiável.
 
 ## Referências
 

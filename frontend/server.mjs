@@ -3,9 +3,10 @@ import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resolveAlias } from '@lorenzoalberto-dev/datajud-sdk';
 
-const host = '127.0.0.1';
-const port = 5190;
+const host = process.env.HOST ?? '127.0.0.1';
+const port = Number(process.env.PORT ?? 5190);
 const root = fileURLToPath(new URL('./dist', import.meta.url));
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -69,14 +70,22 @@ const shouldRetry = (result, exactProcessSearch) => {
 
 const proxyDataJud = async (request, response) => {
   const startedAt = Date.now();
-  const route = request.url?.slice('/api'.length).split('?')[0] ?? '';
-  if (request.method !== 'POST' || !/^\/api_publica_[a-z0-9-]+\/_search$/.test(route)) {
+  const requestUrl = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`);
+  if (request.method !== 'POST' || requestUrl.pathname !== '/api/search') {
     sendJson(response, 400, { error: 'Requisição DataJud inválida.' });
     return;
   }
-  const authorization = request.headers.authorization;
-  if (!authorization) {
-    sendJson(response, 401, { error: 'Cabeçalho Authorization ausente.' });
+  const alias = requestUrl.searchParams.get('tribunal') ?? '';
+  let upstreamUrl;
+  try {
+    upstreamUrl = resolveAlias(alias);
+  } catch {
+    sendJson(response, 400, { error: 'Tribunal inválido.' });
+    return;
+  }
+  const apiKey = process.env.DATAJUD_API_KEY?.trim();
+  if (!apiKey) {
+    sendJson(response, 500, { error: 'DATAJUD_API_KEY não configurada no servidor.' });
     return;
   }
   const body = await readRequestBody(request);
@@ -87,7 +96,7 @@ const proxyDataJud = async (request, response) => {
     return;
   }
   const exactProcessSearch = body.includes('"numeroProcesso"');
-  console.log(`[DataJud] Iniciando ${route}`);
+  console.log(`[DataJud] Iniciando consulta a ${alias}`);
   const args = [
     '--silent',
     '--show-error',
@@ -96,14 +105,14 @@ const proxyDataJud = async (request, response) => {
     '--request',
     'POST',
     '--header',
-    `Authorization: ${authorization}`,
+    `Authorization: APIKey ${apiKey.replace(/^ApiKey\s+/i, '')}`,
     '--header',
     'Content-Type: application/json',
     '--data-binary',
     body,
     '--write-out',
     '\n%{http_code}',
-    `https://api-publica.datajud.cnj.jus.br${route}`,
+    upstreamUrl,
   ];
   let result;
   for (let attempt = 1; attempt <= 3; attempt += 1) {
