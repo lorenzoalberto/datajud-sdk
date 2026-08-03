@@ -27,7 +27,7 @@ execFileSync('npm', ['install', '--ignore-scripts', join(sandbox, filename)], {
 writeFileSync(
   join(sandbox, 'smoke.mjs'),
   [
-    "import { DataJudClient, QueryBuilder, normalizeNumeroProcesso } from '@lorenzoalberto/datajud-sdk';",
+    "import { DataJudClient, QueryBuilder, normalizeNumeroProcesso } from '@lorenzoalberto-dev/datajud-sdk';",
     "if (typeof DataJudClient !== 'function') throw new Error('DataJudClient ausente');",
     "if (new QueryBuilder().build().match_all === undefined) throw new Error('QueryBuilder inválido');",
     "if (normalizeNumeroProcesso('0000000-00.0000.0.00.0000').length !== 20) throw new Error('helper inválido');",
@@ -40,11 +40,11 @@ execFileSync(process.execPath, [join(sandbox, 'smoke.mjs')], {
 
 const manifest = JSON.parse(
   readFileSync(
-    join(sandbox, 'node_modules/@lorenzoalberto/datajud-sdk/package.json'),
+    join(sandbox, 'node_modules/@lorenzoalberto-dev/datajud-sdk/package.json'),
     'utf8',
   ),
 );
-if (manifest.name !== '@lorenzoalberto/datajud-sdk') {
+if (manifest.name !== '@lorenzoalberto-dev/datajud-sdk') {
   throw new Error('Manifesto publicado inválido.');
 }
 

@@ -1,6 +1,6 @@
 # Guia e referência do DataJud SDK
 
-Este documento descreve a API pública atualmente exportada pelo pacote `@lorenzoalberto/datajud-sdk`.
+Este documento descreve a API pública atualmente exportada pelo pacote `@lorenzoalberto-dev/datajud-sdk`.
 
 ## Sumário
 
@@ -19,7 +19,7 @@ Este documento descreve a API pública atualmente exportada pelo pacote `@lorenz
 Crie uma instância de `DataJudClient` com a chave vigente:
 
 ```ts
-import { DataJudClient } from '@lorenzoalberto/datajud-sdk';
+import { DataJudClient } from '@lorenzoalberto-dev/datajud-sdk';
 
 const client = new DataJudClient({
   apiKey: process.env.DATAJUD_API_KEY!,
@@ -31,7 +31,7 @@ O valor pode ser informado com ou sem o prefixo `APIKey`. O SDK normaliza o cabe
 ### Configuração completa
 
 ```ts
-import { DataJudClient, MemoryCache } from '@lorenzoalberto/datajud-sdk';
+import { DataJudClient, MemoryCache } from '@lorenzoalberto-dev/datajud-sdk';
 
 const client = new DataJudClient({
   apiKey: process.env.DATAJUD_API_KEY!,
@@ -64,7 +64,7 @@ O limite local de 120 requisições por janela de 60 segundos vem habilitado por
 `QueryBuilder` fornece métodos para os filtros processuais mais comuns:
 
 ```ts
-import { QueryBuilder } from '@lorenzoalberto/datajud-sdk';
+import { QueryBuilder } from '@lorenzoalberto-dev/datajud-sdk';
 
 const query = new QueryBuilder()
   .numeroProcesso('0000832-35.2018.4.01.3202')
@@ -231,7 +231,7 @@ O iterador interrompe a operação se a resposta não trouxer o cursor ou se o m
 `ProcessosService` analisa o número, resolve o alias do tribunal e executa a consulta:
 
 ```ts
-import { DataJudClient, ProcessosService } from '@lorenzoalberto/datajud-sdk';
+import { DataJudClient, ProcessosService } from '@lorenzoalberto-dev/datajud-sdk';
 
 const client = new DataJudClient({
   apiKey: process.env.DATAJUD_API_KEY!,
@@ -252,7 +252,7 @@ Caso o segmento e o código não correspondam a um endpoint público conhecido, 
 import {
   isValidNumeroProcesso,
   parseNumeroProcesso,
-} from '@lorenzoalberto/datajud-sdk';
+} from '@lorenzoalberto-dev/datajud-sdk';
 
 const valido = isValidNumeroProcesso(
   '0000832-35.2018.4.01.3202',
@@ -285,7 +285,7 @@ import {
   DataJudClient,
   MemoryCache,
   QueryBuilder,
-} from '@lorenzoalberto/datajud-sdk';
+} from '@lorenzoalberto-dev/datajud-sdk';
 
 const client = new DataJudClient({
   apiKey: process.env.DATAJUD_API_KEY!,
@@ -319,7 +319,7 @@ import {
   DataJudError,
   RateLimitError,
   ValidationError,
-} from '@lorenzoalberto/datajud-sdk';
+} from '@lorenzoalberto-dev/datajud-sdk';
 
 try {
   await client.search('TJSP');
@@ -358,7 +358,7 @@ import {
   isTribunalAlias,
   normalizeAlias,
   resolveAlias,
-} from '@lorenzoalberto/datajud-sdk';
+} from '@lorenzoalberto-dev/datajud-sdk';
 
 isTribunalAlias('TJSP');
 normalizeAlias('api_publica_tjsp');

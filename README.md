@@ -49,7 +49,7 @@ A compilação é gerada em `dist/`, com módulos ECMAScript e declarações Typ
 ## Início rápido
 
 ```ts
-import { DataJudClient, QueryBuilder } from '@lorenzoalberto/datajud-sdk';
+import { DataJudClient, QueryBuilder } from '@lorenzoalberto-dev/datajud-sdk';
 
 const client = new DataJudClient({
   apiKey: process.env.DATAJUD_API_KEY!,

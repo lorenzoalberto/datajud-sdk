@@ -1,5 +1,5 @@
 {
-  "name": "@lorenzoalberto/datajud-sdk",
+  "name": "@lorenzoalberto-dev/datajud-sdk",
   "version": "0.1.0",
   "description": "SDK TypeScript para a API Pública do DataJud/CNJ",
   "author": "Lorenzo Alberto",

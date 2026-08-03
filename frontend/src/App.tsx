@@ -8,7 +8,7 @@ import {
   type SearchHit,
   type SearchResponse,
   type TribunalAlias,
-} from '@lorenzoalberto/datajud-sdk';
+} from '@lorenzoalberto-dev/datajud-sdk';
 
 type FormState = {
   tribunal: TribunalAlias;
